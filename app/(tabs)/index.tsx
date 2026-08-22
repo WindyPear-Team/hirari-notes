@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { useRouter } from "expo-router";
 
 import { Card, EmptyState, StatusPill } from "@/components/app-ui";
 import { NoteEditorSheet } from "@/components/notes/note-editor-sheet";
@@ -14,6 +15,7 @@ export default function LibraryScreen() {
   const colors = useColors();
   const { schemas, records, isReady } = useNotes();
   const { profiles } = useSync();
+  const router = useRouter();
   const [query, setQuery] = useState("");
   const [schemaFilter, setSchemaFilter] = useState<string | null>(null);
   const [selectedRecord, setSelectedRecord] = useState<NoteRecord | undefined>();
@@ -22,7 +24,7 @@ export default function LibraryScreen() {
   const activeProfiles = profiles.filter((profile) => profile.enabled).length;
 
   return <ScreenContainer className="px-5"><FlatList data={visibleRecords} keyExtractor={(record) => record.id} contentContainerStyle={styles.list} ListHeaderComponent={<>
-    <View style={styles.header}><View><Text style={[styles.eyebrow, { color: colors.primary }]}>本地优先 · 可控同步</Text><Text style={[styles.title, { color: colors.text }]}>便签库</Text><Text style={[styles.subtitle, { color: colors.muted }]}>{isReady ? `${visibleRecords.length} 条记录 · ${activeProfiles} 个同步目标` : "正在读取本地数据…"}</Text></View><Pressable onPress={() => setNewSchema(schemas[0])} style={({ pressed }) => [styles.fab, { backgroundColor: colors.primary, opacity: pressed ? 0.75 : 1 }]}><IconSymbol name={"plus" as never} color="#FFFFFF" size={23} weight="bold" /></Pressable></View>
+    <View style={styles.header}><View><Text style={[styles.eyebrow, { color: colors.primary }]}>本地优先 · 可控同步</Text><Text style={[styles.title, { color: colors.text }]}>便签库</Text><Text style={[styles.subtitle, { color: colors.muted }]}>{isReady ? `${visibleRecords.length} 条记录 · ${activeProfiles} 个同步目标` : "正在读取本地数据…"}</Text></View><Pressable onPress={() => schemas[0] ? setNewSchema(schemas[0]) : router.push("/formats")} style={({ pressed }) => [styles.fab, { backgroundColor: colors.primary, opacity: pressed ? 0.75 : 1 }]}><IconSymbol name={"plus" as never} color="#FFFFFF" size={23} weight="bold" /></Pressable></View>
     <View style={[styles.search, { borderColor: colors.border, backgroundColor: colors.surface }]}><IconSymbol name={"magnifyingglass" as never} size={18} color={colors.muted} /><TextInput value={query} onChangeText={setQuery} placeholder="搜索标题、字段或标签" placeholderTextColor={colors.muted} style={[styles.searchInput, { color: colors.text }]} /></View>
     <FlatList horizontal data={[{ id: "all", name: "全部", color: colors.primary }, ...schemas]} keyExtractor={(schema) => schema.id} showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filters} renderItem={({ item }) => { const active = schemaFilter === (item.id === "all" ? null : item.id); return <Pressable onPress={() => setSchemaFilter(item.id === "all" ? null : item.id)} style={[styles.filter, { borderColor: active ? colors.primary : colors.border, backgroundColor: active ? `${colors.primary}15` : colors.surface }]}><View style={[styles.dot, { backgroundColor: item.color }]} /><Text style={{ color: active ? colors.primary : colors.text, fontWeight: "700" }}>{item.name}</Text></Pressable>; }} />
   </>} renderItem={({ item }) => <NoteCard record={item} schema={schemas.find((schema) => schema.id === item.schemaId)} onPress={() => setSelectedRecord(item)} />} ListEmptyComponent={<EmptyState title="尚未找到便签" description={query ? "换一个关键词，或切换到其他格式。" : "点击右上角新增一条结构化便签。"} />} />

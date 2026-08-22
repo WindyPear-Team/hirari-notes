@@ -3,7 +3,6 @@ import { createContext, PropsWithChildren, useCallback, useContext, useEffect, u
 
 import { mergeArchive, parseArchive } from "./archive";
 import { createId, defaultsForSchema, validateRecord, validateSchema } from "./schema";
-import { createWelcomeRecord, sshSchema } from "./sample-data";
 import type { FieldValue, ImportSummary, NoteRecord, NoteSchema, NoteState } from "./types";
 
 const STORAGE_KEY = "tsumugi-notes/state-v1";
@@ -26,7 +25,7 @@ const NotesContext = createContext<NotesContextValue | null>(null);
 
 function makeInitialState(): NoteState {
   const deviceId = createId("device");
-  return { schemas: [sshSchema], records: [createWelcomeRecord(deviceId)], deviceId };
+  return { schemas: [], records: [], deviceId };
 }
 
 export function NotesProvider({ children }: PropsWithChildren) {
@@ -37,7 +36,16 @@ export function NotesProvider({ children }: PropsWithChildren) {
   useEffect(() => {
     AsyncStorage.getItem(STORAGE_KEY)
       .then((serialized) => {
-        if (serialized) setState(JSON.parse(serialized) as NoteState);
+        if (serialized) {
+          const restored = JSON.parse(serialized) as NoteState;
+          const schemas = restored.schemas.filter((schema) => schema.id !== "format_ssh_server");
+          const records = restored.records.filter((record) => record.schemaId !== "format_ssh_server");
+          const migrated = { ...restored, schemas, records };
+          setState(migrated);
+          if (schemas.length !== restored.schemas.length || records.length !== restored.records.length) {
+            void AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
+          }
+        }
       })
       .finally(() => setIsReady(true));
   }, []);
