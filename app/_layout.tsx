@@ -8,6 +8,9 @@ import "react-native-reanimated";
 import { Platform } from "react-native";
 import "@/lib/_core/nativewind-pressable";
 import { ThemeProvider } from "@/lib/theme-provider";
+import { NotesProvider } from "@/lib/notes/notes-provider";
+import { SyncProvider } from "@/lib/sync/sync-provider";
+import { useAutoSync } from "@/lib/sync/use-auto-sync";
 import {
   SafeAreaFrameContext,
   SafeAreaInsetsContext,
@@ -25,6 +28,11 @@ const DEFAULT_WEB_FRAME: Rect = { x: 0, y: 0, width: 0, height: 0 };
 export const unstable_settings = {
   anchor: "(tabs)",
 };
+
+function SyncLifecycle() {
+  useAutoSync();
+  return null;
+}
 
 export default function RootLayout() {
   const initialInsets = initialWindowMetrics?.insets ?? DEFAULT_WEB_INSETS;
@@ -85,11 +93,16 @@ export default function RootLayout() {
           {/* Default to hiding native headers so raw route segments don't appear (e.g. "(tabs)", "products/[id]"). */}
           {/* If a screen needs the native header, explicitly enable it and set a human title via Stack.Screen options. */}
           {/* in order for ios apps tab switching to work properly, use presentation: "fullScreenModal" for login page, whenever you decide to use presentation: "modal*/}
-          <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="(tabs)" />
-            <Stack.Screen name="oauth/callback" />
-          </Stack>
-          <StatusBar style="auto" />
+          <NotesProvider>
+            <SyncProvider>
+              <SyncLifecycle />
+              <Stack screenOptions={{ headerShown: false }}>
+                <Stack.Screen name="(tabs)" />
+                <Stack.Screen name="oauth/callback" />
+              </Stack>
+              <StatusBar style="auto" />
+            </SyncProvider>
+          </NotesProvider>
         </QueryClientProvider>
       </trpc.Provider>
     </GestureHandlerRootView>
